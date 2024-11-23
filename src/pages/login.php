@@ -40,7 +40,7 @@
         <section id="signin" class="container">
             <div id="signin-form">
                 <?php if (!empty($errors)) { ?>
-                    <?php include "../includes/error.php" ?>
+                    <?php include "../includes/error.php"; ?>
                 <?php } ?>
                 <div class="form card">
                     <h1>Log in to your account.</h1>
