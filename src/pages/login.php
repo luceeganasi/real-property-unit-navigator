@@ -4,8 +4,8 @@
 
     $errors = []; 
 
-    if(isset($_SESSION['id'])) {
-        // header("Location: account");
+    if(isset($_SESSION['user_id'])) {
+        header("Location: profile.php");
     }
 
     if(isset($_POST['submit'])) {
@@ -18,10 +18,10 @@
         if(empty($errors)) {
             $user = login_account($_POST['email'], $_POST['password']);
             if(!empty($user)) {
-                $_SESSION['id'] = $user['id'];
+                $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['name'] = $user['name'];
 
-                header("Location: buy.php");
+                header("Location: ../index.php");
                 echo "bilat";
             } else {    
                 $errors[] = "The email that you've entered does not match any account.";

@@ -4,8 +4,8 @@
 
     $errors = [];
 
-    if(isset($_SESSION['id'])) {
-        // header("Location: account");
+    if(isset($_SESSION['user_id'])) {
+        header("Location: profile.php");
     }
 
     if(isset($_POST['submit'])) {
@@ -27,10 +27,10 @@
             if(!check_existing_email($_POST['email'])) {
                 $user = save_registration($_POST['name'],$_POST['email'], $_POST['password']);
                 if(!empty($user)) {
-                    $_SESSION['id'] = $user['id'];
+                    $_SESSION['user_id'] = $user['user_id'];
                     $_SESSION['name'] = $user['name'];
 
-                    header("Location: buy.php");
+                    header("Location: profile.php");
                 } else {
                     $errors[] = "There was an error logging in your account.";
                 }

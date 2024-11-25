@@ -33,7 +33,7 @@
                 if($result = $conn->query($query)) {
                     $row = $result->fetch_array(MYSQLI_ASSOC);
                     $user = [
-                        'id' => $row['user_id'],
+                        'user_id' => $row['user_id'],
                         'name' => $row['username'],
                         'email' => $row['email']
                     ];

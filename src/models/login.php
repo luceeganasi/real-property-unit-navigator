@@ -15,7 +15,7 @@
             $hashed_password = md5(md5($row['user_id'].$password));
             if ($hashed_password == $row['password_hash']) {
                 $user = [
-                    'id' => $row['user_id'],
+                    'user_id' => $row['user_id'],
                     'name' => $row['username']
                 ];
             }
