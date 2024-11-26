@@ -1,9 +1,19 @@
 <?php
+// Start the session
+session_start();
+
+// Check if the user is logged in
+if (!isset($_SESSION['user_id'])) {
+    // Redirect to login page if not logged in
+    header("Location: ../pages/login.php");
+    exit();
+}
+
+// Include necessary files
 include "../session.php";
 require_once '../config/database.php';
 
 $success_message = $error_message = '';
-
 $user_id = $_SESSION['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -39,61 +49,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $property_id = $stmt->insert_id;
 
         // Handle image uploads
-if (!empty($_FILES['images']['name'][0])) {
-    $upload_dir = '../uploads/properties/';
-    
-    // Create directory if it doesn't exist
-    if (!file_exists($upload_dir)) {
-        if (!mkdir($upload_dir, 0755, true)) {
-            $error_message = "Failed to create upload directory. Error: " . error_get_last()['message'];
-        }
-    }
-    
-    // Check if directory is writable
-    if (!is_writable($upload_dir)) {
-        $error_message = "Upload directory is not writable. Please check permissions.";
-    }
-    
-    if (empty($error_message)) {
-        foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
-            $file_name = $_FILES['images']['name'][$key];
-            $file_size = $_FILES['images']['size'][$key];
-            $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        if (!empty($_FILES['images']['name'][0])) {
+            $upload_dir = '../uploads/properties/';
             
-            // Validate file type
-            $allowed_extensions = array('jpg', 'jpeg', 'png', 'gif');
-            if (!in_array($file_extension, $allowed_extensions)) {
-                $error_message = "Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.";
-                break;
-            }
-            
-            // Check file size (limit to 10MB)
-            $max_file_size = 10 * 1024 * 1024; // 10MB in bytes
-            if ($file_size > $max_file_size) {
-                $error_message = "File is too large. Maximum file size is 10MB.";
-                break;
-            }
-            
-            // Generate a unique file name
-            $unique_file_name = uniqid() . '_' . $file_name;
-            $file_path = $upload_dir . $unique_file_name;
-            
-            if (!move_uploaded_file($tmp_name, $file_path)) {
-                $error_message = "Failed to move uploaded file: " . $_FILES['images']['error'][$key];
-                $php_error = error_get_last();
-                if ($php_error) {
-                    $error_message .= " PHP Error: " . $php_error['message'];
+            // Create directory if it doesn't exist
+            if (!file_exists($upload_dir)) {
+                if (!mkdir($upload_dir, 0755, true)) {
+                    $error_message = "Failed to create upload directory. Error: " . error_get_last()['message'];
                 }
-                break;
-            } else {
-                // Insert image path into the database
-                $image_stmt = $conn->prepare("INSERT INTO property_images (property_id, image_url) VALUES (?, ?)");
-                $image_stmt->bind_param("is", $property_id, $file_path);
-                $image_stmt->execute();
+            }
+            
+            // Check if directory is writable
+            if (!is_writable($upload_dir)) {
+                $error_message = "Upload directory is not writable. Please check permissions.";
+            }
+            
+            if (empty($error_message)) {
+                foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
+                    $file_name = $_FILES['images']['name'][$key];
+                    $file_size = $_FILES['images']['size'][$key];
+                    $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+                    
+                    // Validate file type
+                    $allowed_extensions = array('jpg', 'jpeg', 'png', 'gif');
+                    if (!in_array($file_extension, $allowed_extensions)) {
+                        $error_message = "Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.";
+                        break;
+                    }
+                    
+                    // Check file size (limit to 10MB)
+                    $max_file_size = 10 * 1024 * 1024; // 10MB in bytes
+                    if ($file_size > $max_file_size) {
+                        $error_message = "File is too large. Maximum file size is 10MB.";
+                        break;
+                    }
+                    
+                    // Generate a unique file name
+                    $unique_file_name = uniqid() . '_' . $file_name;
+                    $file_path = $upload_dir . $unique_file_name;
+                    
+                    if (!move_uploaded_file($tmp_name, $file_path)) {
+                        $error_message = "Failed to move uploaded file: " . $_FILES['images']['error'][$key];
+                        $php_error = error_get_last();
+                        if ($php_error) {
+                            $error_message .= " PHP Error: " . $php_error['message'];
+                        }
+                        break;
+                    } else {
+                        // Insert image path into the database
+                        $image_stmt = $conn->prepare("INSERT INTO property_images (property_id, image_url) VALUES (?, ?)");
+                        $image_stmt->bind_param("is", $property_id, $file_path);
+                        $image_stmt->execute();
+                    }
+                }
             }
         }
-    }
-}
 
         if (empty($error_message)) {
             $success_message = "Property listed successfully!";
@@ -216,4 +226,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <?php include '../includes/footer.php'; ?>
-

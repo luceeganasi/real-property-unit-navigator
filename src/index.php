@@ -1,7 +1,11 @@
 <?php
 // src/pages/index.php
+session_start();
 include './includes/header.php';
 require_once './config/database.php';
+
+// Check if the user is logged in
+$isLoggedIn = isset($_SESSION['user_id']); // Assuming 'user_id' is set upon login
 ?>
 
 <main class="main-content">
@@ -33,7 +37,15 @@ require_once './config/database.php';
             <div class="recommendations-text">
                 <h2>Get home recommendations</h2>
                 <p>Sign in for a more personalized experience.</p>
-                <a href="/pages/signup.php" class="sign-in-button">Sign In</a>
+                
+                <?php if ($isLoggedIn): ?>
+                    <!-- Link to Profile Page if Logged In -->
+                    <a href="/pages/profile.php" class="sign-in-button">Go to Profile</a>
+                <?php else: ?>
+                    <!-- Link to Sign-In Page if Not Logged In -->
+                    <a href="/pages/signup.php" class="sign-in-button">Sign In</a>
+                <?php endif; ?>
+                
             </div>
             <div class="featured-image-container">
                 <img class="responsive-image" src="./assets/images/card.png" alt="house for sale card">
@@ -84,5 +96,6 @@ require_once './config/database.php';
             filters you've used. We use this information to bring similar homes to your attention, so you don't miss out.
         </p>
     </section>
+</main>
 
 <?php include './includes/footer.php'; ?>
