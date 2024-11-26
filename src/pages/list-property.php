@@ -116,113 +116,114 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include '../includes/header.php';
 ?>
 
-<main class="list-property-page">
-    <div class="container">
-        <h1 class="page-title">List Your Property</h1>
-        <?php
-        if ($success_message) {
-            echo "<p class='success-message'>" . htmlspecialchars($success_message) . "</p>";
-        } elseif ($error_message) {
-            echo "<p class='error-message'>" . htmlspecialchars($error_message) . "</p>";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List Your Property</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="list-property-container">
+        <div class="list-property-content">
+            <h1>List Your Property</h1>
+            <?php
+            if ($success_message) {
+                echo "<p class='success-message'>" . htmlspecialchars($success_message) . "</p>";
+            } elseif ($error_message) {
+                echo "<p class='error-message'>" . htmlspecialchars($error_message) . "</p>";
+            }
+            ?>
+            <form action="list-property.php" method="POST" enctype="multipart/form-data" class="list-property-form">
+                <div class="form-group">
+                    <input type="text" id="title" name="title" placeholder="Title" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="description" name="description" placeholder="Description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <select id="transaction_type" name="transaction_type" required>
+                        <option value="">Select Transaction Type</option>
+                        <option value="sale">For Sale</option>
+                        <option value="rent">For Rent</option>
+                    </select>
+                </div>
+                <div id="sale-fields" class="transaction-fields">
+                    <div class="form-group">
+                        <input type="number" id="price" name="price" placeholder="Price" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <input type="number" id="down_payment" name="down_payment" placeholder="Down Payment" step="0.01">
+                    </div>
+                </div>
+                <div id="rent-fields" class="transaction-fields" style="display: none;">
+                    <div class="form-group">
+                        <input type="number" id="monthly_payment" name="monthly_payment" placeholder="Monthly Payment" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="address" name="address" placeholder="Address" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="city" name="city" placeholder="City" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="state" name="state" placeholder="State" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="zip_code" name="zip_code" placeholder="ZIP Code" required>
+                </div>
+                <div class="form-group">
+                    <select id="property_type" name="property_type" required>
+                        <option value="">Select Property Type</option>
+                        <option value="house">House</option>
+                        <option value="apartment">Apartment</option>
+                        <option value="condo">Condo</option>
+                        <option value="land">Land</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="bedrooms" name="bedrooms" placeholder="Bedrooms" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="bathrooms" name="bathrooms" placeholder="Bathrooms" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="area_sqft" name="area_sqft" placeholder="Area (sq ft)" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <input type="file" id="images" name="images[]" accept="image/*" multiple>
+                </div>
+                <button type="submit" class="submit-button">List Property</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const transactionType = document.getElementById('transaction_type');
+        const saleFields = document.getElementById('sale-fields');
+        const rentFields = document.getElementById('rent-fields');
+
+        function toggleFields() {
+            if (transactionType.value === 'sale') {
+                saleFields.style.display = 'block';
+                rentFields.style.display = 'none';
+            } else if (transactionType.value === 'rent') {
+                saleFields.style.display = 'none';
+                rentFields.style.display = 'block';
+            } else {
+                saleFields.style.display = 'none';
+                rentFields.style.display = 'none';
+            }
         }
-        ?>
-        <form action="list-property.php" method="POST" enctype="multipart/form-data" class="property-form">
-            <div class="form-group">
-                <label for="title">Title</label>
-                <input type="text" id="title" name="title" required>
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" name="description" required></textarea>
-            </div>
-            <div class="form-group">
-                <label for="transaction_type">Transaction Type</label>
-                <select id="transaction_type" name="transaction_type" required>
-                    <option value="sale">For Sale</option>
-                    <option value="rent">For Rent</option>
-                </select>
-            </div>
-            <div id="sale-fields" class="transaction-fields">
-                <div class="form-group">
-                    <label for="price">Price</label>
-                    <input type="number" id="price" name="price" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label for="down_payment">Down Payment</label>
-                    <input type="number" id="down_payment" name="down_payment" step="0.01">
-                </div>
-            </div>
-            <div id="rent-fields" class="transaction-fields" style="display: none;">
-                <div class="form-group">
-                    <label for="monthly_payment">Monthly Payment</label>
-                    <input type="number" id="monthly_payment" name="monthly_payment" step="0.01">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="address">Address</label>
-                <input type="text" id="address" name="address" required>
-            </div>
-            <div class="form-group">
-                <label for="city">City</label>
-                <input type="text" id="city" name="city" required>
-            </div>
-            <div class="form-group">
-                <label for="state">State</label>
-                <input type="text" id="state" name="state" required>
-            </div>
-            <div class="form-group">
-                <label for="zip_code">ZIP Code</label>
-                <input type="text" id="zip_code" name="zip_code" required>
-            </div>
-            <div class="form-group">
-                <label for="property_type">Property Type</label>
-                <select id="property_type" name="property_type" required>
-                    <option value="house">House</option>
-                    <option value="apartment">Apartment</option>
-                    <option value="condo">Condo</option>
-                    <option value="land">Land</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="bedrooms">Bedrooms</label>
-                <input type="number" id="bedrooms" name="bedrooms" required>
-            </div>
-            <div class="form-group">
-                <label for="bathrooms">Bathrooms</label>
-                <input type="number" id="bathrooms" name="bathrooms" required>
-            </div>
-            <div class="form-group">
-                <label for="area_sqft">Area (sq ft)</label>
-                <input type="number" id="area_sqft" name="area_sqft" step="0.01" required>
-            </div>
-            <div class="form-group">
-                <label for="images">Images</label>
-                <input type="file" id="images" name="images[]" accept="image/*" multiple>
-            </div>
-            <button type="submit" class="submit-button">List Property</button>
-        </form>
-    </div>
-</main>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const transactionType = document.getElementById('transaction_type');
-    const saleFields = document.getElementById('sale-fields');
-    const rentFields = document.getElementById('rent-fields');
-
-    function toggleFields() {
-        if (transactionType.value === 'sale') {
-            saleFields.style.display = 'block';
-            rentFields.style.display = 'none';
-        } else {
-            saleFields.style.display = 'none';
-            rentFields.style.display = 'block';
-        }
-    }
-
-    transactionType.addEventListener('change', toggleFields);
-    toggleFields(); // Call once to set initial state
-});
-</script>
+        transactionType.addEventListener('change', toggleFields);
+        toggleFields(); // Call once to set initial state
+    });
+    </script>
+</body>
+</html>
 
 <?php include '../includes/footer.php'; ?>

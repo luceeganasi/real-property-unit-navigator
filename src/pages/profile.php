@@ -61,54 +61,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <?php include "../includes/header.php"; ?>
-    <div class="container">
-        <h1>User Profile</h1>
-        <div class="profile-info">
-            <p><strong>Username:</strong> <?php echo htmlspecialchars($user['username']); ?></p>
-            <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
+<main class="profile-container">
+    <div class="profile-content">
+        <div class="profile-header">
             
-            <h2>Phone Numbers</h2>
-            <?php if (!empty($phone_numbers)): ?>
-                <ul>
+            <h1><?php echo htmlspecialchars($user['username']); ?></h1>
+            <p class="profile-email"><?php echo htmlspecialchars($user['email']); ?></p>
+        </div>
+
+        <div class="profile-section">
+            <div class="section-header">
+                <span class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                </span>
+                <?php if (!empty($phone_numbers)): ?>
                     <?php foreach ($phone_numbers as $index => $phone): ?>
-                        <li>
-                            <?php echo htmlspecialchars($phone); ?>
-                            <form action="profile.php" method="POST" style="display:inline;">
+                        <div class="phone-number">
+                            Tel : <?php echo htmlspecialchars($phone); ?>
+                            <form action="profile.php" method="POST" class="inline-form">
                                 <input type="hidden" name="phone_index" value="<?php echo $index; ?>">
-                                <button type="submit" name="remove_phone">Remove</button>
+                                <button type="submit" name="remove_phone" class="remove-btn">remove</button>
                             </form>
-                        </li>
+                        </div>
+                        
                     <?php endforeach; ?>
-                </ul>
-            <?php else: ?>
-                <p>No phone numbers added.</p>
-            <?php endif; ?>
+                    <?php else: ?>
+                         <p>No phone number added.</p>
+                    <?php endif; ?>
+            </div>
 
             <?php if (count($phone_numbers) < 2): ?>
                 <form action="profile.php" method="POST" class="add-form">
-                    <input type="text" name="new_phone" placeholder="Enter phone number" required>
-                    <button type="submit" name="add_phone">Add Phone Number</button>
+                    <input 
+                        type="text" 
+                        name="new_phone" 
+                        placeholder="Enter phone number" 
+                        class="input-field"
+                        required
+                    >
+                    <button type="submit" name="add_phone" class="add-btn">
+                        Add
+                    </button>
                 </form>
             <?php endif; ?>
+        </div>
 
-            <h2>Facebook Profile</h2>
-            <?php if (!empty($user['facebook_profile'])): ?>
-                <p><?php echo htmlspecialchars($user['facebook_profile']); ?></p>
-                <form action="profile.php" method="POST">
-                    <button type="submit" name="remove_facebook">Remove Facebook Profile</button>
-                </form>
-            <?php else: ?>
-                <p>No Facebook profile added.</p>
-            <?php endif; ?>
+        <div class="profile-section">
+            <div class="section-header">
+                <span class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                        </svg>
+                </span>
+                <?php if (!empty($user['facebook_profile'])): ?>
+                    <div class="facebook-profile">
+                        <?php echo htmlspecialchars($user['facebook_profile']); ?>
+                        <form action="profile.php" method="POST" class="inline-form">
+                            <button type="submit" name="remove_facebook" class="remove-btn">remove</button>
+                        </form>
+                    </div>
+                <?php else: ?>
+                    <p>No Facebook profile added.</p>
+                <?php endif; ?>
+            </div>
 
             <?php if (empty($user['facebook_profile'])): ?>
                 <form action="profile.php" method="POST" class="add-form">
-                    <input type="text" name="facebook_profile" placeholder="Enter Facebook profile URL" required>
-                    <button type="submit" name="add_facebook">Add Facebook Profile</button>
+                    <input 
+                        type="text" 
+                        name="facebook_profile" 
+                        placeholder="Enter facebook profile" 
+                        class="input-field"
+                        required
+                    >
+                    <button type="submit" name="add_facebook" class="add-btn">
+                        Add
+                    </button>
                 </form>
             <?php endif; ?>
         </div>
 
         <a href="logout.php" class="logout-btn">Log Out</a>
     </div>
+</main>
 <?php include '../includes/footer.php'; ?>
