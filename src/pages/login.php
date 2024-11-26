@@ -20,9 +20,7 @@
             if(!empty($user)) {
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['name'] = $user['name'];
-
                 header("Location: profile.php");
-                echo "bilat";
             } else {    
                 $errors[] = "The email that you've entered does not match any account.";
             }
@@ -35,33 +33,48 @@
     }
 ?>
 <?php include "../includes/header.php"; ?>
-    
-    <main class="content">
-        <section id="signin" class="container">
-            <div id="signin-form">
-                <?php if (!empty($errors)) { ?>
-                    <?php include "../includes/error.php"; ?>
+
+<main class="login-container">
+    <div class="login-form">
+        <?php if (!empty($errors)) { ?>
+            <div class="error-messages">
+                <?php foreach($errors as $error) { ?>
+                    <p class="error"><?= $error ?></p>
                 <?php } ?>
-                <div class="form card">
-                    <h1>Log in to your account.</h1>
-                    <form  method="post">
-                        <div class="input-control">
-                            <label for="name">Email: </label>
-                            <input type="email" name="email" class="input-field input-md" value="<?= $_POST['email'] ?>" />
-                        </div>
-                        <div class="input-control">
-                            <label for="name">Password: </label>
-                            <input type="password" name="password" class="input-field input-md" value="<?= $_POST['password'] ?>" />
-                        </div>
-                        <div class="input-control">
-                            <input type="submit" name="submit" class="btn btn-md btn-rounded" value="Login" />
-                        </div>
-                        <div id="signup-account">
-                            <p>Don't have an account? <a href="./signup.php">Signup</a> </p>
-                        </div>
-                    </form>
-                </div>
             </div>
-        </section>
-    </main>
+        <?php } ?>
+        
+        <h1>Log in</h1>
+        
+        <form method="post">
+            <div class="form-group">
+                <input 
+                    type="email" 
+                    name="email" 
+                    placeholder="Email"
+                    value="<?= htmlspecialchars($_POST['email']) ?>" 
+                    required
+                />
+            </div>
+            
+            <div class="form-group">
+                <input 
+                    type="password" 
+                    name="password" 
+                    placeholder="Password"
+                    required
+                />
+            </div>
+            
+            <button type="submit" name="submit" class="login-button">
+                Log in
+            </button>
+            
+            <p class="signup-link">
+                Don't have an account? <a href="./signup.php">Signup</a>
+            </p>
+        </form>
+    </div>
+</main>
+
 <?php include "../includes/footer.php"; ?>

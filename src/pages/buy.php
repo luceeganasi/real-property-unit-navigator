@@ -75,12 +75,6 @@ if ($row && isset($row['total'])) {
 
 $total_pages = ($total_results > 0) ? ceil($total_results / $items_per_page) : 1;
 
-// // Debugging information (remove in production)
-// echo "Debug: Count Query:: " . $count_query . "<br>";
-// echo "Debug: Parameters: " . json_encode($params) . "<br>";
-// echo "Debug: Total Results: " . $total_results . "<br>";
-// echo "Debug: Total Pages: " . $total_pages . "<br>";
-
 // Add pagination to the main query
 $query .= " LIMIT ? OFFSET ?";
 $params[] = $items_per_page;

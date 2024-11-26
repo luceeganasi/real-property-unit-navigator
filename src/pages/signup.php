@@ -47,38 +47,67 @@
     }
 ?>
 <?php include "../includes/header.php"; ?>
-    
-    <main class="content">
-        <section id="signup" class="container">
-            <div id="signup-form">
-                <?php if (!empty($errors)) { ?>
-                    <?php include "../includes/error.php" ?>
+
+<main class="signup-container">
+    <div class="signup-form">
+        <?php if (!empty($errors)) { ?>
+            <div class="error-messages">
+                <?php foreach($errors as $error) { ?>
+                    <p class="error"><?= $error ?></p>
                 <?php } ?>
-                <div class="form card">
-                    <h1>Sign up to your account.</h1>
-                    <form method="post">
-                        <div class="input-control">
-                            <label for="name">Name: </label>
-                            <input type="text" name="name" class="input-field input-md" value="<?= $_POST['name'] ?>" />
-                        </div>
-                        <div class="input-control">
-                            <label for="email">Email: </label>
-                            <input type="email" name="email" class="input-field input-md" value="<?= $_POST['email'] ?>" />
-                        </div>
-                        <div class="input-control">
-                            <label for="password">Password: </label>
-                            <input type="password" name="password" class="input-field input-md" value="<?= $_POST['password'] ?>" />
-                        </div>
-                        <div class="input-control">
-                            <label for="name">Confirm Password: </label>
-                            <input type="password" name="confirm_password" class="input-field input-md" value="" />
-                        </div>
-                        <div class="input-control">
-                            <input type="submit" name="submit" class="btn btn-sm btn-rounded" value="Register" />
-                        </div>
-                    </form>
-                </div>
             </div>
-        </section>
-    </main>
+        <?php } ?>
+        
+        <h1>Sign up</h1>
+        
+        <form method="post">
+            <div class="form-group">
+                <input 
+                    type="text" 
+                    name="name" 
+                    placeholder="Name"
+                    value="<?= htmlspecialchars($_POST['name']) ?>" 
+                    required
+                />
+            </div>
+            
+            <div class="form-group">
+                <input 
+                    type="email" 
+                    name="email" 
+                    placeholder="Email"
+                    value="<?= htmlspecialchars($_POST['email']) ?>" 
+                    required
+                />
+            </div>
+            
+            <div class="form-group">
+                <input 
+                    type="password" 
+                    name="password" 
+                    placeholder="Password"
+                    required
+                />
+            </div>
+            
+            <div class="form-group">
+                <input 
+                    type="password" 
+                    name="confirm_password" 
+                    placeholder="Confirm Password"
+                    required
+                />
+            </div>
+            
+            <button type="submit" name="submit" class="signup-button">
+                Sign up
+            </button>
+            
+            <p class="login-link">
+                Already have an account? <a href="./login.php">Log in</a>
+            </p>
+        </form>
+    </div>
+</main>
+
 <?php include "../includes/footer.php"; ?>
