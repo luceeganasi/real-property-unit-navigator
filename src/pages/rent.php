@@ -1,143 +1,193 @@
 <?php
-// src/pages/rent.php
-include "../session.php" ;
+session_start();
+include '../config/database.php';
+
+// Pagination
+$items_per_page = 6;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$offset = ($page - 1) * $items_per_page;
+
+// Base query for fetching properties
+$query = "SELECT p.*, 
+    (SELECT image_url FROM property_images WHERE property_id = p.property_id AND is_primary = 0 LIMIT 1) as image_url 
+    FROM properties p 
+    WHERE transaction_type = 'rent'"; // Change here for transaction_type = 'rent'
+
+$params = [];
+$types = "";
+
+// Search functionality
+if (!empty($_GET['search'])) {
+    $search = "%{$_GET['search']}%";
+    $query .= " AND (p.title LIKE ? OR p.address LIKE ? OR p.city LIKE ? OR p.state LIKE ? OR p.zip_code LIKE ?)";
+    $params = array_merge($params, [$search, $search, $search, $search, $search]);
+    $types .= "sssss";
+}
+
+// Filter functionality
+if (!empty($_GET['home_type'])) {
+    $query .= " AND p.property_type = ?";
+    $params[] = $_GET['home_type'];
+    $types .= "s";
+}
+
+if (!empty($_GET['price_range'])) {
+    list($min_price, $max_price) = explode('-', $_GET['price_range']);
+    $query .= " AND p.price >= ? AND p.price <= ?";
+    $params[] = $min_price;
+    $params[] = $max_price;
+    $types .= "dd";
+}
+
+// Build the count query separately
+$count_query = "SELECT COUNT(*) as total FROM properties p WHERE transaction_type = 'rent'"; // Change here for transaction_type = 'rent'
+
+// Reuse dynamic filters for count query
+if (!empty($_GET['search'])) {
+    $count_query .= " AND (p.title LIKE ? OR p.address LIKE ? OR p.city LIKE ? OR p.state LIKE ? OR p.zip_code LIKE ?)";
+}
+
+if (!empty($_GET['home_type'])) {
+    $count_query .= " AND p.property_type = ?";
+}
+
+if (!empty($_GET['price_range'])) {
+    $count_query .= " AND p.price >= ? AND p.price <= ?";
+}
+
+// Prepare and execute the count query
+$stmt = $conn->prepare($count_query);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+$row = $result->fetch_assoc();
+
+if ($row && isset($row['total'])) {
+    $total_results = (int)$row['total'];
+} else {
+    // Handle the error - log it and set a default value
+    echo "Unable to fetch total results from the database";
+    error_log("Error: Unable to fetch total results from the database.");
+    $total_results = 0;
+}
+
+$total_pages = ($total_results > 0) ? ceil($total_results / $items_per_page) : 1;
+
+// // Debugging information (remove in production)
+// echo "Debug: Count Query:: " . $count_query . "<br>";
+// echo "Debug: Parameters: " . json_encode($params) . "<br>";
+// echo "Debug: Total Results: " . $total_results . "<br>";
+// echo "Debug: Total Pages: " . $total_pages . "<br>";
+
+// Add pagination to the main query
+$query .= " LIMIT ? OFFSET ?";
+$params[] = $items_per_page;
+$params[] = $offset;
+$types .= "ii";
+
+// Execute the main query
+$stmt = $conn->prepare($query);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+$properties = $result->fetch_all(MYSQLI_ASSOC);
+
+// Check if we have results
+if (empty($properties)) {
+    echo "<p>No properties found matching your criteria.</p>";
+}
+
 include '../includes/header.php';
-require_once '../config/database.php';
 ?>
 
-<div class="search-container">
-    <div class="search-bar">
-        <input type="text" name="location" id="location" placeholder="Enter an address, neighborhood, city, or ZIP code" class="search-input" value="<?php echo isset($_GET['location']) ? htmlspecialchars($_GET['location']) : ''; ?>">
-        <button type="submit" class="search-button" form="search-form">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-        </button>
-    </div>
-    
-    <form id="search-form" method="GET" action="" class="filters">
-        <div class="dropdown">
-            <select name="transaction_type" id="transaction_type" class="dropdown-toggle">
-                <option value="sale" <?php echo (isset($_GET['transaction_type']) && $_GET['transaction_type'] == 'sale') ? 'selected' : ''; ?>>For Sale</option>
-                <option value="rent" <?php echo (!isset($_GET['transaction_type']) || $_GET['transaction_type'] == 'rent') ? 'selected' : ''; ?>>For Rent</option>
-            </select>
-        </div>
-
-        <div class="dropdown">
-            <select name="property_type" id="property_type" class="dropdown-toggle">
-                <option value="">Home Type</option>
-                <option value="house" <?php echo (isset($_GET['property_type']) && $_GET['property_type'] == 'house') ? 'selected' : ''; ?>>House</option>
-                <option value="apartment" <?php echo (isset($_GET['property_type']) && $_GET['property_type'] == 'apartment') ? 'selected' : ''; ?>>Apartment</option>
-                <option value="condo" <?php echo (isset($_GET['property_type']) && $_GET['property_type'] == 'condo') ? 'selected' : ''; ?>>Condo</option>
-                <option value="land" <?php echo (isset($_GET['property_type']) && $_GET['property_type'] == 'land') ? 'selected' : ''; ?>>Land</option>
-            </select>
-        </div>
-
-        <div class="dropdown">
-            <button type="button" class="dropdown-toggle">Price</button>
-            <div class="dropdown-menu">
-                <input type="number" name="min_price" id="min_price" placeholder="Min Price" value="<?php echo isset($_GET['min_price']) ? htmlspecialchars($_GET['min_price']) : ''; ?>">
-                <input type="number" name="max_price" id="max_price" placeholder="Max Price" value="<?php echo isset($_GET['max_price']) ? htmlspecialchars($_GET['max_price']) : ''; ?>">
+<div class="main-content">
+    <div class="search-container">
+        <form action="" method="GET" class="search-for">
+            <div class="search-bar">
+                <input type="text" name="search" placeholder="Enter an address, neighborhood, city, or ZIP code" class="search-input-buy-rent" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                <button type="submit" class="search-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
             </div>
-        </div>
+            
+            <div class="filters">
+                <div class="dropdown">
+                    <select name="home_type" class="dropdown-toggle">
+                        <option value="">Home Type</option>
+                        <option value="house" <?php echo (isset($_GET['home_type']) && $_GET['home_type'] == 'house') ? 'selected' : ''; ?>>House</option>
+                        <option value="apartment" <?php echo (isset($_GET['home_type']) && $_GET['home_type'] == 'apartment') ? 'selected' : ''; ?>>Apartment</option>
+                        <option value="condo" <?php echo (isset($_GET['home_type']) && $_GET['home_type'] == 'condo') ? 'selected' : ''; ?>>Condo</option>
+                        <option value="land" <?php echo (isset($_GET['home_type']) && $_GET['home_type'] == 'land') ? 'selected' : ''; ?>>Land</option>
+                    </select>
+                </div>
 
-        <button type="submit" class="search-submit">Search</button>
-    </form>
-</div>
+                <div class="dropdown">
+                    <select name="price_range" class="dropdown-toggle">
+                        <option value="">Price Range</option>
+                        <option value="0-100000" <?php echo (isset($_GET['price_range']) && $_GET['price_range'] == '0-100000') ? 'selected' : ''; ?>>₱0 - ₱100,000</option>
+                        <option value="100000-500000" <?php echo (isset($_GET['price_range']) && $_GET['price_range'] == '100000-500000') ? 'selected' : ''; ?>>₱100,000 - ₱500,000</option>
+                        <option value="500000-1000000" <?php echo (isset($_GET['price_range']) && $_GET['price_range'] == '500000-1000000') ? 'selected' : ''; ?>>₱500,000 - ₱1,000,000</option>
+                        <option value="1000000-5000000" <?php echo (isset($_GET['price_range']) && $_GET['price_range'] == '1000000-5000000') ? 'selected' : ''; ?>>₱1,000,000 - ₱5,000,000</option>
+                        <option value="5000000-10000000" <?php echo (isset($_GET['price_range']) && $_GET['price_range'] == '5000000-10000000') ? 'selected' : ''; ?>>₱5,000,000 - ₱10,000,000</option>
+                        <option value="10000000-100000000" <?php echo (isset($_GET['price_range']) && $_GET['price_range'] == '10000000-100000000') ? 'selected' : ''; ?>>₱10,000,000+</option>
+                    </select>
+                </div>
 
-<div class="properties-grid">
-<?php
-if ($_SERVER['REQUEST_METHOD'] == 'GET' && !empty($_GET)) {
-    $where = [];
-    $params = [];
+                <button type="submit" class="filter-button">Apply Filters</button>
+            </div>
+        </form>
+    </div>
 
-    if (!empty($_GET['transaction_type'])) {
-        $where[] = "transaction_type = ?";
-        $params[] = $_GET['transaction_type'];
-    } else {
-        // If transaction_type is not set, default to 'rent'
-        $where[] = "transaction_type = ?";
-        $params[] = 'rent';
-    }
-
-    if (!empty($_GET['property_type'])) {
-        $where[] = "property_type = ?";
-        $params[] = $_GET['property_type'];
-    }
-
-    if (!empty($_GET['min_price'])) {
-        $where[] = "price >= ?";
-        $params[] = $_GET['min_price'];
-    }
-
-    if (!empty($_GET['max_price'])) {
-        $where[] = "price <= ?";
-        $params[] = $_GET['max_price'];
-    }
-
-    if (!empty($_GET['location'])) {
-        $where[] = "(city LIKE ? OR state LIKE ? OR zip_code LIKE ?)";
-        $params[] = "%{$_GET['location']}%";
-        $params[] = "%{$_GET['location']}%";
-        $params[] = "%{$_GET['location']}%";
-    }
-
-    $sql = "SELECT p.*, 
-        (SELECT image_url FROM property_images WHERE property_id = p.property_id AND is_primary = 1 LIMIT 1) as image_url 
-        FROM properties p";
-    if (!empty($where)) {
-        $sql .= " WHERE " . implode(" AND ", $where);
-    }
-
-    $stmt = $conn->prepare($sql);
-
-    if ($stmt) {
-        if (!empty($params)) {
-            $types = str_repeat('s', count($params));
-            $stmt->bind_param($types, ...$params);
-        }
-
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        while ($row = $result->fetch_assoc()) {
-            ?>
+    <div class="properties-grid">
+        <?php foreach ($properties as $property): ?>
             <div class="property-card">
                 <div class="property-image">
-                    <img src="<?php echo htmlspecialchars($row['image_url'] ?? '/placeholder.jpg'); ?>" alt="Property Image">
+                    <img src="<?php echo htmlspecialchars($property['image_url'] ?? '/placeholder.jpg'); ?>" alt="Property Image">
                 </div>
                 <div class="property-details">
-                    <h3 class="property-price">Php <?php echo number_format($row['price'], 2); ?><?php echo $row['transaction_type'] == 'rent' ? '/mo' : ''; ?></h3>
+                    <h3 class="property-price">₱<?php echo number_format($property['price'], 2); ?></h3>
                     <div class="property-specs">
-                        <span><?php echo htmlspecialchars($row['bedrooms']); ?> bd</span>
-                        <span><?php echo htmlspecialchars($row['bathrooms']); ?> ba</span>
-                        <span><?php echo number_format($row['area_sqft']); ?> sqft</span>
-                        <span><?php echo ucfirst(htmlspecialchars($row['property_type'])); ?> for <?php echo ucfirst(htmlspecialchars($row['transaction_type'])); ?></span>
+                        <span><?php echo htmlspecialchars($property['bedrooms']); ?> bd</span>
+                        <span><?php echo htmlspecialchars($property['bathrooms']); ?> ba</span>
+                        <span><?php echo number_format($property['area_sqft']); ?> sqft</span>
+                        <span>For Rent</span> <!-- Display transaction type as "For Rent" -->
                     </div>
                     <p class="property-address">
-                        <?php echo htmlspecialchars($row['address']); ?>, 
-                        <?php echo htmlspecialchars($row['city']); ?>, 
-                        <?php echo htmlspecialchars($row['state']); ?>
+                        <?php echo htmlspecialchars($property['address']); ?>, 
+                        <?php echo htmlspecialchars($property['city']); ?>, 
+                        <?php echo htmlspecialchars($property['state']); ?>
                     </p>
                 </div>
             </div>
-            <?php
-        }
-
-        $stmt->close();
-    } else {
-        echo "Error: " . $conn->error;
-    }
-}
-?>
-</div>
-
-<div class="pagination">
-    <a href="#" class="pagination-arrow">&lt;</a>
+        <?php endforeach; ?>
+    </div>
     
-    <a href="#" class="pagination-arrow">&gt;</a>
+    <div class="pagination">
+        <?php if ($page > 1): ?>
+            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="pagination-arrow">
+            &laquo;
+            </a>
+        <?php else: ?>
+            <span class="pagination-arrow disabled">&laquo;</span>
+        <?php endif; ?>
+
+        <span class="pagination-info">Page <?php echo $page; ?> of <?php echo $total_pages; ?></span>
+
+        <?php if ($page < $total_pages): ?>
+            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="pagination-arrow">
+                &raquo;
+            </a>
+        <?php else: ?>
+            <span class="pagination-arrow disabled">&raquo;</span>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php include '../includes/footer.php'; ?>
-

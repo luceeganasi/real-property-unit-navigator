@@ -474,10 +474,19 @@ h1 {
 }
 
 
-.search-form {
+.search-for {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 20px;
+    justify-content: space-between;
+}
+
+.search-input-buy-rent {
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 4px 0 0 4px;
+    width: 380px;
+    border: 1px solid #ddd;
 }
 
 .filters {

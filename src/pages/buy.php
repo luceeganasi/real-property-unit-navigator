@@ -106,9 +106,9 @@ include '../includes/header.php';
 
 <div class="main-content">
     <div class="search-container">
-        <form action="" method="GET" class="search-form">
+        <form action="" method="GET" class="search-for">
             <div class="search-bar">
-                <input type="text" name="search" placeholder="Enter an address, neighborhood, city, or ZIP code" class="search-input" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                <input type="text" name="search" placeholder="Enter an address, neighborhood, city, or ZIP code" class="search-input-buy-rent" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
                 <button type="submit" class="search-button">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"></circle>
@@ -140,7 +140,7 @@ include '../includes/header.php';
                     </select>
                 </div>
 
-                <button type="submit" class="apply-filters-button">Apply Filters</button>
+                <button type="submit" class="filter-button">Apply Filters</button>
             </div>
         </form>
     </div>
