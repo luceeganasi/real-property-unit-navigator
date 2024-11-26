@@ -1,3 +1,7 @@
+<?php
+session_start();
+$isLoggedIn = isset($_SESSION['user_id']);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,8 +25,14 @@
             
             <div class="nav-right">
                 <a href="/pages/help.php" class="nav-link">Help</a>
-                <a href="/pages/login.php" class="nav-link">Log in</a>
+                <?php if ($isLoggedIn): ?>
+                    <a href="/pages/bookmarks.php" class="nav-link">Bookmarks</a>
+                    <a href="/pages/profile.php" class="nav-link">Profile</a>
+                <?php else: ?>
+                    <a href="/pages/login.php" class="nav-link">Log in</a>
+                <?php endif; ?>
             </div>
         </nav>
     </header>
     <main>
+
