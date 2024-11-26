@@ -1059,7 +1059,7 @@ h1 {
     font-weight: bold;
     color: #000000;
     line-height: 1.2;
-    justify-items: left;
+    justify-items: center;
     text-align: left;
 }
 
@@ -1095,12 +1095,17 @@ h1 {
 
     .sell-text h1 {
         font-size: 2.5rem;
+        text-align: center;
     }
 }
 
 @media (max-width: 768px) {
     .sell-content {
         flex-direction: column;
+    }
+
+    .sell-text h1 {
+        text-align: center;
     }
 
     .sell-image {
