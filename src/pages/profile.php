@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 ?>
 
-<?php include "../includes/profile-header.php"; ?>
+<?php include "../includes/header.php"; ?>
     <div class="container">
         <h1>User Profile</h1>
         <div class="profile-info">

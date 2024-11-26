@@ -21,7 +21,7 @@
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['name'] = $user['name'];
 
-                header("Location: ../index.php");
+                header("Location: profile.php");
                 echo "bilat";
             } else {    
                 $errors[] = "The email that you've entered does not match any account.";

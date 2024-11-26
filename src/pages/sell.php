@@ -1,3 +1,4 @@
+<?php include "../session.php" ; ?>
 <?php include '../includes/header.php'; ?>
 
 <main class="sell-page">
