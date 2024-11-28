@@ -152,7 +152,7 @@ include '../includes/header.php';
                     <img src="<?php echo htmlspecialchars($property['image_url'] ?? '/placeholder.jpg'); ?>" alt="Property Image">
                 </div>
                 <div class="property-details">
-                    <h3 class="property-price">₱<?php echo number_format($property['price'], 2); ?>/month</h3>
+                    <h3 class="property-price">₱<?php echo number_format($property['monthly_payment'], 2); ?>/month</h3>
                     <div class="property-specs">
                         <span><?php echo htmlspecialchars($property['bedrooms']); ?> bd</span>
                         <span><?php echo htmlspecialchars($property['bathrooms']); ?> ba</span>

@@ -95,3 +95,5 @@ CREATE INDEX IF NOT EXISTS idx_properties_location ON properties(city, state, zi
 CREATE INDEX IF NOT EXISTS idx_property_images_property_id ON property_images(property_id);
 CREATE INDEX IF NOT EXISTS idx_property_features_property_id ON property_features(property_id);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id ON bookmarks(user_id);
+
+ALTER TABLE properties MODIFY price DECIMAL(12, 2) NOT NULL DEFAULT 0.00;

@@ -34,14 +34,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Handle transaction-specific fields
     if ($transaction_type === 'sale') {
-        $price = $_POST['price'];
-        $down_payment = $_POST['down_payment'];
-        $monthly_payment = null;
-    } else {
-        $price = null;
-        $down_payment = null;
-        $monthly_payment = $_POST['monthly_payment'];
-    }
+    $price = $_POST['price'] ?? 0.00; // Ensure a default value is provided
+    $down_payment = $_POST['down_payment'] ?? 0.00;
+    $monthly_payment = null;
+} else {
+    $price = 0.00; // Default value for rentals
+    $down_payment = null;
+    $monthly_payment = $_POST['monthly_payment'] ?? 0.00;
+}
+
 
     // Insert data into the database
     $stmt = $conn->prepare("INSERT INTO properties (user_id, title, description, price, down_payment, monthly_payment, address, city, state, zip_code, latitude, longitude, transaction_type, property_type, bedrooms, bathrooms, area_sqft) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
