@@ -3,7 +3,7 @@ session_start();
 include '../config/database.php';
 
 // Pagination
-$items_per_page = 6;
+$items_per_page = 12;
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $offset = ($page - 1) * $items_per_page;
 
@@ -11,7 +11,7 @@ $offset = ($page - 1) * $items_per_page;
 $query = "SELECT p.*, 
     (SELECT image_url FROM property_images WHERE property_id = p.property_id AND is_primary = 0 LIMIT 1) as image_url 
     FROM properties p 
-    WHERE transaction_type = 'rent'"; // Change here for transaction_type = 'rent'
+    WHERE transaction_type = 'rent'";
 
 $params = [];
 $types = "";
@@ -40,7 +40,7 @@ if (!empty($_GET['price_range'])) {
 }
 
 // Build the count query separately
-$count_query = "SELECT COUNT(*) as total FROM properties p WHERE transaction_type = 'rent'"; // Change here for transaction_type = 'rent'
+$count_query = "SELECT COUNT(*) as total FROM properties p WHERE transaction_type = 'rent'";
 
 // Reuse dynamic filters for count query
 if (!empty($_GET['search'])) {
@@ -139,6 +139,11 @@ include '../includes/header.php';
         </form>
     </div>
 
+    <div class="map-container">
+        <h2>Rental Property Locations</h2>
+        <div id="property-map"></div>
+    </div>
+
     <div class="properties-grid">
         <?php foreach ($properties as $property): ?>
             <div class="property-card">
@@ -146,12 +151,12 @@ include '../includes/header.php';
                     <img src="<?php echo htmlspecialchars($property['image_url'] ?? '/placeholder.jpg'); ?>" alt="Property Image">
                 </div>
                 <div class="property-details">
-                    <h3 class="property-price">₱<?php echo number_format($property['price'], 2); ?></h3>
+                    <h3 class="property-price">₱<?php echo number_format($property['price'], 2); ?>/month</h3>
                     <div class="property-specs">
                         <span><?php echo htmlspecialchars($property['bedrooms']); ?> bd</span>
                         <span><?php echo htmlspecialchars($property['bathrooms']); ?> ba</span>
                         <span><?php echo number_format($property['area_sqft']); ?> sqft</span>
-                        <span>For Rent</span> <!-- Display transaction type as "For Rent" -->
+                        <span>For Rent</span>
                     </div>
                     <p class="property-address">
                         <?php echo htmlspecialchars($property['address']); ?>, 
@@ -166,7 +171,7 @@ include '../includes/header.php';
     <div class="pagination">
         <?php if ($page > 1): ?>
             <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="pagination-arrow">
-            &laquo;
+                &laquo;
             </a>
         <?php else: ?>
             <span class="pagination-arrow disabled">&laquo;</span>
@@ -184,4 +189,27 @@ include '../includes/header.php';
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var map = L.map('property-map').setView([14.5995, 120.9842], 10); // Default view centered on Manila
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    <?php foreach ($properties as $property): ?>
+        <?php if (!empty($property['latitude']) && !empty($property['longitude'])): ?>
+            L.marker([<?php echo $property['latitude']; ?>, <?php echo $property['longitude']; ?>])
+                .addTo(map)
+                .bindPopup(`
+                    <strong><?php echo htmlspecialchars($property['title']); ?></strong><br>
+                    Price: ₱<?php echo number_format($property['price'], 2); ?>/month<br>
+                    <a href="/pages/property.php?id=<?php echo $property['property_id']; ?>">View Details</a>
+                `);
+        <?php endif; ?>
+    <?php endforeach; ?>
+});
+</script>
+
 <?php include '../includes/footer.php'; ?>
+

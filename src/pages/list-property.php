@@ -24,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $city = $_POST['city'];
     $state = $_POST['state'];
     $zip_code = $_POST['zip_code'];
+    $latitude = $_POST['latitude'];
+    $longitude = $_POST['longitude'];
     $transaction_type = $_POST['transaction_type'];
     $property_type = $_POST['property_type'];
     $bedrooms = $_POST['bedrooms'];
@@ -42,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Insert data into the database
-    $stmt = $conn->prepare("INSERT INTO properties (user_id, title, description, price, down_payment, monthly_payment, address, city, state, zip_code, transaction_type, property_type, bedrooms, bathrooms, area_sqft) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("issdddssssssiii", $user_id, $title, $description, $price, $down_payment, $monthly_payment, $address, $city, $state, $zip_code, $transaction_type, $property_type, $bedrooms, $bathrooms, $area_sqft);
+    $stmt = $conn->prepare("INSERT INTO properties (user_id, title, description, price, down_payment, monthly_payment, address, city, state, zip_code, latitude, longitude, transaction_type, property_type, bedrooms, bathrooms, area_sqft) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("issdddssssddssiii", $user_id, $title, $description, $price, $down_payment, $monthly_payment, $address, $city, $state, $zip_code, $latitude, $longitude, $transaction_type, $property_type, $bedrooms, $bathrooms, $area_sqft);
     
     if ($stmt->execute()) {
         $property_id = $stmt->insert_id;
@@ -173,6 +175,12 @@ include '../includes/header.php';
                 </div>
                 <div class="form-group">
                     <input type="text" id="zip_code" name="zip_code" placeholder="ZIP Code" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="latitude" name="latitude" placeholder="Latitude" step="any" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="longitude" name="longitude" placeholder="Longitude" step="any" required>
                 </div>
                 <div class="form-group">
                     <select id="property_type" name="property_type" required>

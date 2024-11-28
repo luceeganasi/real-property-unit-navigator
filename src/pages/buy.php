@@ -139,8 +139,14 @@ include '../includes/header.php';
         </form>
     </div>
 
+    <div class="map-container">
+        <h2>Property Locations</h2>
+        <div id="property-map"></div>
+    </div>
+
     <div class="properties-grid">
         <?php foreach ($properties as $property): ?>
+            <a href="/property.php?id=<?php echo $property['property_id']; ?>" style="color: inherit; text-decoration: none;">
             <div class="property-card">
                 <div class="property-image">
                     <img src="<?php echo htmlspecialchars($property['image_url'] ?? '/placeholder.jpg'); ?>" alt="Property Image">
@@ -160,6 +166,7 @@ include '../includes/header.php';
                     </p>
                 </div>
             </div>
+            </a>
         <?php endforeach; ?>
     </div>
     
@@ -184,4 +191,29 @@ include '../includes/header.php';
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var map = L.map('property-map').setView([14.5995, 120.9842], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    <?php foreach ($properties as $property): ?>
+        <?php if (!empty($property['latitude']) && !empty($property['longitude'])): ?>
+            L.marker([<?php echo $property['latitude']; ?>, <?php echo $property['longitude']; ?>])
+                .addTo(map)
+                .bindPopup(`
+                    <strong><?php echo htmlspecialchars($property['title']); ?></strong><br>
+                    Price: ₱<?php echo number_format($property['price'], 2); ?><br>
+                    <a href="/property.php?id=<?php echo $property['property_id']; ?>">View Details</a>
+                `);
+        <?php endif; ?>
+    <?php endforeach; ?>
+});
+</script>
+
 <?php include '../includes/footer.php'; ?>
+
+</body>
+</html>
+

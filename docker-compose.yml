@@ -8,11 +8,19 @@ services:
       - ./src:/var/www/html
     ports:
       - 9004:80
+    environment:
+      - NODE_ENV=production
+    networks:
+      - app-network
+
   mysql_db:
     image: mysql:latest
     container_name: 'db_server'
     environment:
       MYSQL_ROOT_PASSWORD: root
+    networks:
+      - app-network
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     container_name: 'dbms_software'
@@ -21,4 +29,10 @@ services:
       PMA_USER: root
       PMA_PASSWORD: root
     ports:
-      - 9006:80  
+      - 9006:80
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
