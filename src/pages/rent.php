@@ -146,6 +146,7 @@ include '../includes/header.php';
 
     <div class="properties-grid">
         <?php foreach ($properties as $property): ?>
+            <a href="./property.php?id=<?php echo $property['property_id']; ?>" style="color: inherit; text-decoration: none;">
             <div class="property-card">
                 <div class="property-image">
                     <img src="<?php echo htmlspecialchars($property['image_url'] ?? '/placeholder.jpg'); ?>" alt="Property Image">
@@ -165,6 +166,7 @@ include '../includes/header.php';
                     </p>
                 </div>
             </div>
+            </a>
         <?php endforeach; ?>
     </div>
     
@@ -204,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .bindPopup(`
                     <strong><?php echo htmlspecialchars($property['title']); ?></strong><br>
                     Price: ₱<?php echo number_format($property['price'], 2); ?>/month<br>
-                    <a href="/pages/property.php?id=<?php echo $property['property_id']; ?>">View Details</a>
+                    <a href="./pages/property.php?id=<?php echo $property['property_id']; ?>">View Details</a>
                 `);
         <?php endif; ?>
     <?php endforeach; ?>

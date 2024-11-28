@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $down_payment = $_POST['down_payment'];
         $monthly_payment = null;
     } else {
-        $price = $_POST['monthly_payment'];
+        $price = null;
         $down_payment = null;
         $monthly_payment = $_POST['monthly_payment'];
     }
@@ -50,58 +50,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($stmt->execute()) {
         $property_id = $stmt->insert_id;
 
-        // Handle image uploads
-        if (!empty($_FILES['images']['name'][0])) {
-            $upload_dir = '../uploads/properties/';
-            
-            // Create directory if it doesn't exist
-            if (!file_exists($upload_dir)) {
-                if (!mkdir($upload_dir, 0755, true)) {
-                    $error_message = "Failed to create upload directory. Error: " . error_get_last()['message'];
+        $upload_dir = '../uploads/properties/';
+        
+        // Create directory if it doesn't exist
+        if (!file_exists($upload_dir)) {
+            if (!mkdir($upload_dir, 0755, true)) {
+                $error_message = "Failed to create upload directory. Error: " . error_get_last()['message'];
+            }
+        }
+        
+        // Check if directory is writable
+        if (!is_writable($upload_dir)) {
+            $error_message = "Upload directory is not writable. Please check permissions.";
+        }
+        
+        if (empty($error_message)) {
+            // Handle thumbnail upload
+            if (!empty($_FILES['thumbnail']['name'])) {
+                $thumbnail_file = $_FILES['thumbnail'];
+                $thumbnail_name = $thumbnail_file['name'];
+                $thumbnail_tmp = $thumbnail_file['tmp_name'];
+                $thumbnail_extension = strtolower(pathinfo($thumbnail_name, PATHINFO_EXTENSION));
+                
+                // Validate file type
+                $allowed_extensions = array('jpg', 'jpeg', 'png', 'gif');
+                if (!in_array($thumbnail_extension, $allowed_extensions)) {
+                    $error_message = "Invalid thumbnail file type. Only JPG, JPEG, PNG, and GIF are allowed.";
+                } else {
+                    // Generate a unique file name for thumbnail
+                    $unique_thumbnail_name = uniqid() . '_thumbnail_' . $thumbnail_name;
+                    $thumbnail_path = $upload_dir . $unique_thumbnail_name;
+                    
+                    if (move_uploaded_file($thumbnail_tmp, $thumbnail_path)) {
+                        // Insert thumbnail path into the database
+                        $thumbnail_stmt = $conn->prepare("INSERT INTO property_images (property_id, image_url, is_thumbnail) VALUES (?, ?, 1)");
+                        $thumbnail_stmt->bind_param("is", $property_id, $thumbnail_path);
+                        $thumbnail_stmt->execute();
+                    } else {
+                        $error_message = "Failed to move uploaded thumbnail file.";
+                    }
                 }
             }
-            
-            // Check if directory is writable
-            if (!is_writable($upload_dir)) {
-                $error_message = "Upload directory is not writable. Please check permissions.";
-            }
-            
-            if (empty($error_message)) {
-                foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
-                    $file_name = $_FILES['images']['name'][$key];
-                    $file_size = $_FILES['images']['size'][$key];
-                    $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-                    
-                    // Validate file type
-                    $allowed_extensions = array('jpg', 'jpeg', 'png', 'gif');
-                    if (!in_array($file_extension, $allowed_extensions)) {
-                        $error_message = "Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.";
-                        break;
-                    }
-                    
-                    // Check file size (limit to 10MB)
-                    $max_file_size = 10 * 1024 * 1024; // 10MB in bytes
-                    if ($file_size > $max_file_size) {
-                        $error_message = "File is too large. Maximum file size is 10MB.";
-                        break;
-                    }
-                    
-                    // Generate a unique file name
-                    $unique_file_name = uniqid() . '_' . $file_name;
-                    $file_path = $upload_dir . $unique_file_name;
-                    
-                    if (!move_uploaded_file($tmp_name, $file_path)) {
-                        $error_message = "Failed to move uploaded file: " . $_FILES['images']['error'][$key];
-                        $php_error = error_get_last();
-                        if ($php_error) {
-                            $error_message .= " PHP Error: " . $php_error['message'];
+
+            // Handle multiple property images upload
+            if (!empty($_FILES['images']['name'][0])) {
+                $file_count = count($_FILES['images']['name']);
+                if ($file_count > 30) {
+                    $error_message = "Error: Maximum of 30 images allowed. You tried to upload {$file_count} images.";
+                } else {
+                    foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
+                        $file_name = $_FILES['images']['name'][$key];
+                        $file_size = $_FILES['images']['size'][$key];
+                        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+                        
+                        // Validate file type
+                        if (!in_array($file_extension, $allowed_extensions)) {
+                            $error_message = "Invalid file type for {$file_name}. Only JPG, JPEG, PNG, and GIF are allowed.";
+                            break;
                         }
-                        break;
-                    } else {
-                        // Insert image path into the database
-                        $image_stmt = $conn->prepare("INSERT INTO property_images (property_id, image_url) VALUES (?, ?)");
-                        $image_stmt->bind_param("is", $property_id, $file_path);
-                        $image_stmt->execute();
+                        
+                        // Check file size (limit to 10MB)
+                        $max_file_size = 10 * 1024 * 1024; // 10MB in bytes
+                        if ($file_size > $max_file_size) {
+                            $error_message = "File {$file_name} is too large. Maximum file size is 10MB.";
+                            break;
+                        }
+                        
+                        // Generate a unique file name
+                        $unique_file_name = uniqid() . '_' . $file_name;
+                        $file_path = $upload_dir . $unique_file_name;
+                        
+                        if (!move_uploaded_file($tmp_name, $file_path)) {
+                            $error_message = "Failed to move uploaded file: {$file_name}";
+                            $php_error = error_get_last();
+                            if ($php_error) {
+                                $error_message .= " PHP Error: " . $php_error['message'];
+                            }
+                            break;
+                        } else {
+                            // Insert image path into the database
+                            $image_stmt = $conn->prepare("INSERT INTO property_images (property_id, image_url, is_thumbnail) VALUES (?, ?, 0)");
+                            $image_stmt->bind_param("is", $property_id, $file_path);
+                            $image_stmt->execute();
+                        }
                     }
                 }
             }
@@ -201,7 +232,13 @@ include '../includes/header.php';
                     <input type="number" id="area_sqft" name="area_sqft" placeholder="Area (sq ft)" step="0.01" required>
                 </div>
                 <div class="form-group">
+                    <label for="thumbnail">Thumbnail Image:</label>
+                    <input type="file" id="thumbnail" name="thumbnail" accept="image/*" required>
+                </div>
+                <div class="form-group">
+                    <label for="images">Property Images (Max 30):</label>
                     <input type="file" id="images" name="images[]" accept="image/*" multiple>
+                    <p id="image-count">0 images selected</p>
                 </div>
                 <button type="submit" class="submit-button">List Property</button>
             </form>
@@ -229,6 +266,20 @@ include '../includes/header.php';
 
         transactionType.addEventListener('change', toggleFields);
         toggleFields(); // Call once to set initial state
+
+        const imagesInput = document.getElementById('images');
+        const imageCount = document.getElementById('image-count');
+
+        imagesInput.addEventListener('change', function() {
+            const fileCount = this.files.length;
+            imageCount.textContent = `${fileCount} image${fileCount !== 1 ? 's' : ''} selected`;
+
+            if (fileCount > 30) {
+                alert('You can only upload a maximum of 30 images. Please select fewer images.');
+                this.value = ''; // Clear the input
+                imageCount.textContent = '0 images selected';
+            }
+        });
     });
     </script>
 </body>
