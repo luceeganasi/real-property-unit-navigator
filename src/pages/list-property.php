@@ -17,133 +17,152 @@ $success_message = $error_message = '';
 $user_id = $_SESSION['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Process form submission
-    $title = $_POST['title'];
-    $description = $_POST['description'];
-    $address = $_POST['address'];
-    $city = $_POST['city'];
-    $state = $_POST['state'];
-    $zip_code = $_POST['zip_code'];
-    $latitude = $_POST['latitude'];
-    $longitude = $_POST['longitude'];
-    $transaction_type = $_POST['transaction_type'];
-    $property_type = $_POST['property_type'];
-    $bedrooms = $_POST['bedrooms'];
-    $bathrooms = $_POST['bathrooms'];
-    $area_sqft = $_POST['area_sqft'];
+    try {
+        // Validate and sanitize inputs
+        $data = [
+            'title' => trim($_POST['title']),
+            'description' => trim($_POST['description']),
+            'property_type' => $_POST['property_type'],
+            'transaction_type' => $_POST['transaction_type'],
+            'address' => trim($_POST['address']),
+            'city' => trim($_POST['city']),
+            'state' => trim($_POST['state']),
+            'zip_code' => trim($_POST['zip_code']),
+            'latitude' => floatval($_POST['latitude']),
+            'longitude' => floatval($_POST['longitude']),
+            'bedrooms' => intval($_POST['bedrooms']),
+            'bathrooms' => intval($_POST['bathrooms']),
+            'area_sqft' => floatval($_POST['area_sqft'])
+        ];
 
-    // Handle transaction-specific fields
-    if ($transaction_type === 'sale') {
-    $price = $_POST['price'] ?? 0.00; // Ensure a default value is provided
-    $down_payment = $_POST['down_payment'] ?? 0.00;
-    $monthly_payment = null;
-} else {
-    $price = 0.00; // Default value for rentals
-    $down_payment = null;
-    $monthly_payment = $_POST['monthly_payment'] ?? 0.00;
+        // Set price-related fields based on transaction type
+        if ($data['transaction_type'] === 'sale') {
+            $data['price'] = floatval($_POST['price'] ?? 0.00);
+            $data['down_payment'] = floatval($_POST['down_payment'] ?? 0.00);
+            $data['monthly_payment'] = null;
+        } else {
+            $data['price'] = 0.00;
+            $data['down_payment'] = null;
+            $data['monthly_payment'] = floatval($_POST['monthly_payment'] ?? 0.00);
+        }
+
+        // Insert property data
+        $query = "INSERT INTO properties (
+            user_id, title, description, property_type, transaction_type,
+            price, bedrooms, bathrooms, area_sqft, address, city, state,
+            zip_code, latitude, longitude, down_payment, monthly_payment
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $stmt = $conn->prepare($query);
+        if (!$stmt) {
+            throw new Exception("Database prepare failed: " . $conn->error);
+        }
+
+        $stmt->bind_param("issssdiiissssdddd",
+            $user_id,
+            $data['title'],
+            $data['description'],
+            $data['property_type'],
+            $data['transaction_type'],
+            $data['price'],
+            $data['bedrooms'],
+            $data['bathrooms'],
+            $data['area_sqft'],
+            $data['address'],
+            $data['city'],
+            $data['state'],
+            $data['zip_code'],
+            $data['latitude'],
+            $data['longitude'],
+            $data['down_payment'],
+            $data['monthly_payment']
+        );
+
+        if (!$stmt->execute()) {
+            throw new Exception("Failed to save property: " . $stmt->error);
+        }
+
+        $property_id = $conn->insert_id;
+
+        // Handle image uploads
+        $upload_dir = '../uploads/properties/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+
+        // Process thumbnail
+        if (!empty($_FILES['thumbnail']['name'])) {
+            $thumbnail = handleImageUpload($_FILES['thumbnail'], $upload_dir, true);
+            savePropertyImage($conn, $property_id, $thumbnail, true);
+        }
+
+        // Process additional images
+        if (!empty($_FILES['images']['name'][0])) {
+            handleMultipleImages($conn, $_FILES['images'], $upload_dir, $property_id);
+        }
+
+        $success_message = "Property listed successfully!";
+        
+    } catch (Exception $e) {
+        $error_message = $e->getMessage();
+        error_log("Error in list-property.php: " . $e->getMessage());
+    }
 }
 
+// Helper functions
+function handleImageUpload($file, $upload_dir, $is_thumbnail = false) {
+    $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+    $max_size = 10 * 1024 * 1024; // 10MB
 
-    // Insert data into the database
-    $stmt = $conn->prepare("INSERT INTO properties (user_id, title, description, price, down_payment, monthly_payment, address, city, state, zip_code, latitude, longitude, transaction_type, property_type, bedrooms, bathrooms, area_sqft) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("issdddssssddssiii", $user_id, $title, $description, $price, $down_payment, $monthly_payment, $address, $city, $state, $zip_code, $latitude, $longitude, $transaction_type, $property_type, $bedrooms, $bathrooms, $area_sqft);
+    if (!in_array($file['type'], $allowed_types)) {
+        throw new Exception('Invalid file type. Only JPG, PNG and GIF are allowed.');
+    }
+
+    if ($file['size'] > $max_size) {
+        throw new Exception('File is too large. Maximum size is 10MB.');
+    }
+
+    $filename = uniqid() . ($is_thumbnail ? '_thumbnail_' : '_') . basename($file['name']);
+    $filepath = $upload_dir . $filename;
+
+    if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+        throw new Exception('Failed to move uploaded file.');
+    }
+
+    return $filepath;
+}
+
+function handleMultipleImages($conn, $files, $upload_dir, $property_id) {
+    $count = count($files['name']);
+    if ($count > 30) {
+        throw new Exception("Maximum of 30 images allowed.");
+    }
+
+    for ($i = 0; $i < $count; $i++) {
+        $file = [
+            'name' => $files['name'][$i],
+            'type' => $files['type'][$i],
+            'tmp_name' => $files['tmp_name'][$i],
+            'error' => $files['error'][$i],
+            'size' => $files['size'][$i]
+        ];
+
+        $filepath = handleImageUpload($file, $upload_dir);
+        savePropertyImage($conn, $property_id, $filepath, false);
+    }
+}
+
+function savePropertyImage($conn, $property_id, $filepath, $is_primary) {
+    $stmt = $conn->prepare("INSERT INTO property_images (property_id, image_url, is_primary) VALUES (?, ?, ?)");
+    if (!$stmt) {
+        throw new Exception("Failed to prepare image insert: " . $conn->error);
+    }
+
+    $is_primary = $is_primary ? 1 : 0;
+    $stmt->bind_param("isi", $property_id, $filepath, $is_primary);
     
-    if ($stmt->execute()) {
-        $property_id = $stmt->insert_id;
-
-        $upload_dir = '../uploads/properties/';
-        
-        // Create directory if it doesn't exist
-        if (!file_exists($upload_dir)) {
-            if (!mkdir($upload_dir, 0755, true)) {
-                $error_message = "Failed to create upload directory. Error: " . error_get_last()['message'];
-            }
-        }
-        
-        // Check if directory is writable
-        if (!is_writable($upload_dir)) {
-            $error_message = "Upload directory is not writable. Please check permissions.";
-        }
-        
-        if (empty($error_message)) {
-            // Handle thumbnail upload
-            if (!empty($_FILES['thumbnail']['name'])) {
-                $thumbnail_file = $_FILES['thumbnail'];
-                $thumbnail_name = $thumbnail_file['name'];
-                $thumbnail_tmp = $thumbnail_file['tmp_name'];
-                $thumbnail_extension = strtolower(pathinfo($thumbnail_name, PATHINFO_EXTENSION));
-                
-                // Validate file type
-                $allowed_extensions = array('jpg', 'jpeg', 'png', 'gif');
-                if (!in_array($thumbnail_extension, $allowed_extensions)) {
-                    $error_message = "Invalid thumbnail file type. Only JPG, JPEG, PNG, and GIF are allowed.";
-                } else {
-                    // Generate a unique file name for thumbnail
-                    $unique_thumbnail_name = uniqid() . '_thumbnail_' . $thumbnail_name;
-                    $thumbnail_path = $upload_dir . $unique_thumbnail_name;
-                    
-                    if (move_uploaded_file($thumbnail_tmp, $thumbnail_path)) {
-                        // Insert thumbnail path into the database
-                        $thumbnail_stmt = $conn->prepare("INSERT INTO property_images (property_id, image_url, is_thumbnail) VALUES (?, ?, 1)");
-                        $thumbnail_stmt->bind_param("is", $property_id, $thumbnail_path);
-                        $thumbnail_stmt->execute();
-                    } else {
-                        $error_message = "Failed to move uploaded thumbnail file.";
-                    }
-                }
-            }
-
-            // Handle multiple property images upload
-            if (!empty($_FILES['images']['name'][0])) {
-                $file_count = count($_FILES['images']['name']);
-                if ($file_count > 30) {
-                    $error_message = "Error: Maximum of 30 images allowed. You tried to upload {$file_count} images.";
-                } else {
-                    foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
-                        $file_name = $_FILES['images']['name'][$key];
-                        $file_size = $_FILES['images']['size'][$key];
-                        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-                        
-                        // Validate file type
-                        if (!in_array($file_extension, $allowed_extensions)) {
-                            $error_message = "Invalid file type for {$file_name}. Only JPG, JPEG, PNG, and GIF are allowed.";
-                            break;
-                        }
-                        
-                        // Check file size (limit to 10MB)
-                        $max_file_size = 10 * 1024 * 1024; // 10MB in bytes
-                        if ($file_size > $max_file_size) {
-                            $error_message = "File {$file_name} is too large. Maximum file size is 10MB.";
-                            break;
-                        }
-                        
-                        // Generate a unique file name
-                        $unique_file_name = uniqid() . '_' . $file_name;
-                        $file_path = $upload_dir . $unique_file_name;
-                        
-                        if (!move_uploaded_file($tmp_name, $file_path)) {
-                            $error_message = "Failed to move uploaded file: {$file_name}";
-                            $php_error = error_get_last();
-                            if ($php_error) {
-                                $error_message .= " PHP Error: " . $php_error['message'];
-                            }
-                            break;
-                        } else {
-                            // Insert image path into the database
-                            $image_stmt = $conn->prepare("INSERT INTO property_images (property_id, image_url, is_thumbnail) VALUES (?, ?, 0)");
-                            $image_stmt->bind_param("is", $property_id, $file_path);
-                            $image_stmt->execute();
-                        }
-                    }
-                }
-            }
-        }
-
-        if (empty($error_message)) {
-            $success_message = "Property listed successfully!";
-        }
-    } else {
-        $error_message = "Error: " . $stmt->error;
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to save image: " . $stmt->error);
     }
 }
 
