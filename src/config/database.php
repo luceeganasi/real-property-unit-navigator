@@ -1,8 +1,8 @@
 <?php
-    $servername = "mysql_db";
-    $username = "root";
-    $password = "root";
-    $db = "real_estate_app";
+    $servername = "bqmveegfxbsdpdoivajw-mysql.services.clever-cloud.com";
+    $username = "ubtpof1rh25kwlpl";
+    $password = "K1H1WLTClrQu4MRNE9MV";
+    $db = "bqmveegfxbsdpdoivajw";
 
     // Create connection
     $conn = new mysqli($servername, $username, $password, $db);

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: real-estate-app
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: MYSQL_HOST
+        value: mysql_db
+      - key: MYSQL_USER
+        value: root
+      - key: MYSQL_PASSWORD
+        value: root
+      - key: MYSQL_DATABASE
+        value: real_estate_db
+    healthCheckPath: /
+    autoDeploy: true 
