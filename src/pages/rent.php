@@ -9,7 +9,7 @@ $offset = ($page - 1) * $items_per_page;
 
 // Base query for fetching properties
 $query = "SELECT p.*, 
-    (SELECT image_url FROM property_images WHERE property_id = p.property_id AND is_primary = 0 LIMIT 1) as image_url 
+    (SELECT image_url FROM property_images WHERE property_id = p.property_id AND is_primary = 1 LIMIT 1) as image_url 
     FROM properties p 
     WHERE transaction_type = 'rent'";
 
